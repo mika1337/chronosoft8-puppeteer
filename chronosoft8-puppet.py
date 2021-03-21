@@ -7,12 +7,13 @@ import configparser
 import logging
 import logging.config
 import os
-import time
+import queue
 import yaml
+from time import sleep
 
 # =============================================================================
 # Local imports
-from chronosoft8puppet import GPIO
+from chronosoft8puppet import Remote
 
 # =============================================================================
 # Logger setup
@@ -26,50 +27,85 @@ _config_path = os.path.join( os.path.dirname(os.path.realpath(__file__))
 # =============================================================================
 # Class
 class Chronosoft8Puppet:
+    CMD_UP = 'up'
+    CMD_DOWN = 'down'
+    CMD_STOP = 'stop'
+    CMD_INT  = 'intermediate'
+    CMD_SHUTDOWN = 'shutdown'
+
     def __init__(self):
-        # Load configuration
+        # Read configuration file
         config_file = os.path.join( _config_path
                                   , 'chronosoft8-puppet.ini')
         config = configparser.ConfigParser()
         config.read( config_file )
 
+        # Initialize remote object
+        self._remote = Remote(config)
+
+        # Read plugin list from config file
         try:
-            return_gpio_channel   = int(config['GPIO']['return'])
-            validate_gpio_channel = int(config['GPIO']['validate'])
-            up_gpio_channel       = int(config['GPIO']['up'])
-            stop_gpio_channel     = int(config['GPIO']['stop'])
-            down_gpio_channel     = int(config['GPIO']['down'])
+            plugin_names = config['Plugins']['active'].split(',')
         except KeyError:
-            logger.error('Missing parameter(s) in configuration file {}'.format(config_file))
-            raise
-        except ValueError:
-            logger.error('Invalid parameter value in configuration file {}'.format(config_file))
+            logger.error('Missing active plugins in configuration file {}'.format(config_file))
             raise
 
-        active_high = True
-        try:
-            active_low = config['GPIO']['active_low']
-        except:
-            pass
+        # Load plugins
+        self._plugins_constructor = list()
+        for plugin_name in plugin_names:
+            cmd = 'from plugins import {} as plugin_handle'.format(plugin_name)
+            exec(cmd,globals())
+            self._plugins_constructor.append(plugin_handle)
 
-        if active_low:
-            active_high = False
+        # Initialize command queue
+        self._cmd_queue = queue.Queue()
 
-        # Setup GPIOs
-        self._btn_ret  = GPIO( "Return"  , return_gpio_channel  , GPIO.OUT, 0, active_high=active_high)
-        self._btn_val  = GPIO( "Validate", validate_gpio_channel, GPIO.OUT, 0, active_high=active_high)
-        self._btn_up   = GPIO( "Up"      , up_gpio_channel      , GPIO.OUT, 0, active_high=active_high)
-        self._btn_stop = GPIO( "Stop"    , up_gpio_channel      , GPIO.OUT, 0, active_high=active_high)
-        self._btn_down = GPIO( "Down"    , up_gpio_channel      , GPIO.OUT, 0, active_high=active_high)
+
+    def getChannelNb(self):
+        return self._remote.getChannelNb()
+
+    def driveChannel(self,channel,command):
+        logger.debug('Queueing order for channel {}: {}'.format(channel,command))
+        self._cmd_queue.put( (channel,command) )
 
     def start(self):
-        time.sleep(1)
-        self._btn_ret.set(True)
-        self._btn_val.set(True)
-        time.sleep(0.05)
-        self._btn_val.set(False)
-        time.sleep(1)
-        self._btn_ret.set(False)
+        # Initialize remote
+        logger.info('Initializing remote')
+        self._remote.initRemote()
+
+        # Initialize plugins
+        plugins = list()
+        for plugin_constructor in self._plugins_constructor:
+            plugin = plugin_constructor(self,config)
+            logger.info('Starting plugin {}'.format(plugin.getName()))
+            plugin.start()
+            plugins.append(plugin)
+
+        # Process command queue
+        while True:
+            cmd = self._cmd_queue.get()
+            channel = cmd[0]
+            command = cmd[1]
+
+            if command == self.CMD_SHUTDOWN:
+                logger.info('Received shutdown command')
+                break
+
+            logger.debug('Processing order for channel {}: {}'.format(channel,command))
+            self._remote.driveChannel( channel, command )
+
+        # Stop all plugins
+        for plugin in plugins:
+            plugin.stop()
+
+        # Wait for all plugins to end
+        logger.debug('Waiting plugins to end')
+        for plugin in plugins:
+            plugin.wait()
+
+        logger.info('All plugins stopped, stopping remote')
+        self._remote.stopRemote()
+
 
 # =============================================================================
 # Main

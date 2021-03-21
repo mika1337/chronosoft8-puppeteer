@@ -2,7 +2,6 @@
 # System imports
 import logging
 import RPi.GPIO as RPiGPIO
-from enum import Enum
 
 # =============================================================================
 # Logger setup

@@ -3,7 +3,7 @@ disable_existing_loggers: false
 
 formatters:
     standard:
-        format: '%(levelname)-8s - %(name)-10s - %(module)-14s - %(message)s'
+        format: '%(asctime)s - %(levelname)-8s - %(name)-10s - %(module)-14s - %(message)s'
 
 handlers:
     console:
@@ -14,3 +14,7 @@ handlers:
 root:
     level: DEBUG
     handlers: [console]
+
+loggers:
+    chronosoft8puppet.gpio:
+        level: ERROR
