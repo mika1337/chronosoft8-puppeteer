@@ -16,5 +16,7 @@ root:
     handlers: [console]
 
 loggers:
-    chronosoft8puppet.gpio:
+    chronosoft8puppeteer.gpio:
         level: ERROR
+    websockets.protocol:
+        level: INFO

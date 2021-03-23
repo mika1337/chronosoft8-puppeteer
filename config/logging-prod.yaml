@@ -5,13 +5,13 @@ formatters:
     standard:
         format: '%(asctime)s - %(levelname)-8s - %(name)-14s - %(message)s'
     syslog:
-        format: 'shairport-bridge %(asctime)s - %(levelname)-8s - %(name)-14s - %(message)s'
+        format: 'chronosoft8-puppeteer %(asctime)s - %(levelname)-8s - %(name)-14s - %(message)s'
 
 handlers:
     file:
         class: logging.handlers.RotatingFileHandler
         formatter: standard
-        filename: /var/log/local/chronosoft8-puppet.log
+        filename: /var/log/local/chronosoft8-puppeteer.log
         maxBytes: 100000
         backupCount: 2
 
@@ -23,3 +23,9 @@ handlers:
 root:
     level: INFO
     handlers: [file,syslog]
+
+loggers:
+    chronosoft8puppeteer.gpio:
+        level: ERROR
+    websockets.protocol:
+        level: INFO

@@ -60,4 +60,3 @@ class GPIO:
             physical_value = value if self._active_high == True else not value
             logger.debug('Setting GPIO {:<10} to {} (logical value)'.format(self._name,1 if value else 0))
             RPiGPIO.output( self._channel, physical_value )
-

@@ -7,7 +7,7 @@ import time
 
 # =============================================================================
 # Local imports
-from chronosoft8puppet import GPIO
+from chronosoft8puppeteer import GPIO
 
 # =============================================================================
 # Logger setup
@@ -25,7 +25,7 @@ class Remote:
     CMD_UP = 'up'
     CMD_DOWN = 'down'
     CMD_STOP = 'stop'
-    CMD_INT  = 'intermediate'
+    CMD_INT  = 'int'
 
     def __init__( self, config ):
         # Load configuration
@@ -81,7 +81,7 @@ class Remote:
 
         self._last_btn_press_date = 0
 
-    def initRemote( self, fast_init=False ):
+    def start( self, fast_init=False ):
         logger.debug('Waiting in case remote was powered on startup')
         time.sleep(1)
 
@@ -89,42 +89,42 @@ class Remote:
         self._rly_power.set(1)
         self._last_btn_press_date = time.time()
         time.sleep(2)
-        self._pressButton( self.BTN_VALIDATE )
-        self._pressButton( self.BTN_VALIDATE )
+        self._press_button( self.BTN_VALIDATE )
+        self._press_button( self.BTN_VALIDATE )
 
         # Sometimes the remote seems to boot with hour already set, in this case the preceeding validate button
         # double press would lead to no being on main screen. Double press on return button let us return to
         # main screen in all situation
-        self._pressButton( self.BTN_RETURN )
-        self._pressButton( self.BTN_RETURN )
+        self._press_button( self.BTN_RETURN )
+        self._press_button( self.BTN_RETURN )
 
         if fast_init == True:
-            logger.info('Fast init (no channel configuration)')
+            logger.warn('Fast init (no channel configuration)')
         else:
             logger.info('Configuring {} channels'.format(len(self._channel_list)))
             # Disable all channels (the first can't be disabled, but will be reinitialised)
-            self._pressButton( self.BTN_VALIDATE, duration=3 )
+            self._press_button( self.BTN_VALIDATE, duration=3 )
             for channel in range( 8 ):
-                self._pressButton( self.BTN_DOWN )
-                self._pressButton( self.BTN_VALIDATE )
+                self._press_button( self.BTN_DOWN )
+                self._press_button( self.BTN_VALIDATE )
 
             # Enable selected channels
-            self._pressButton( self.BTN_VALIDATE, duration=3 )
+            self._press_button( self.BTN_VALIDATE, duration=3 )
             for channel in range( 1, 9 ):
                 if channel in self._channel_list:
-                    self._pressButton( self.BTN_UP )
+                    self._press_button( self.BTN_UP )
                 else:
-                    self._pressButton( self.BTN_DOWN )
-                self._pressButton( self.BTN_VALIDATE )
+                    self._press_button( self.BTN_DOWN )
+                self._press_button( self.BTN_VALIDATE )
 
         self._current_channel_index = 0
         logger.info('Current channel is {}'.format(self._channel_list[self._current_channel_index]))
 
-    def stopRemote( self ):
+    def stop( self ):
         logger.info('Powering down remote')
         self._rly_power.set(0)
 
-    def driveChannel( self, channel, command ):
+    def drive_channel( self, channel, command ):
         if channel not in self._channel_list:
             logger.error('Can\'t drive not configured channel {}'.format(channel))
             return
@@ -133,27 +133,27 @@ class Remote:
         if self._channel_list[self._current_channel_index] != channel:
             logger.info('Changing channel {} => {}'.format(self._channel_list[self._current_channel_index],channel))
             while self._channel_list[self._current_channel_index] != channel:
-                self._pressButton(self.BTN_RETURN)
+                self._press_button(self.BTN_RETURN)
                 self._current_channel_index = self._current_channel_index + 1
                 if self._current_channel_index >= len(self._channel_list):
                     self._current_channel_index = 0
 
         logger.info('Sending channel {} {} order'.format(channel,command))
         if command == self.CMD_UP:
-            self._pressButton(self.BTN_UP,duration=0.5)
+            self._press_button(self.BTN_UP,duration=0.5)
         elif command == self.CMD_DOWN:
-            self._pressButton(self.BTN_DOWN,duration=0.5)
+            self._press_button(self.BTN_DOWN,duration=0.5)
         elif command == self.CMD_STOP:
-            self._pressButton(self.BTN_STOP,duration=0.5)
+            self._press_button(self.BTN_STOP,duration=0.5)
         elif command == self.CMD_INT:
-            self._pressButton(self.BTN_STOP,self.BTN_DOWN,duration=0.5)
+            self._press_button(self.BTN_STOP,self.BTN_DOWN,duration=0.5)
         else:
             logger.error('Unknown command {}'.format(command))
 
-    def getChannelNb(self):
-        return len(self._channel_list)
+    def get_channels(self):
+        return self._channel_list
 
-    def _pressButton( self, *args, **kwargs ):
+    def _press_button( self, *args, **kwargs ):
         # Check if remote is sleeping
         now = time.time()
         if now - self._last_btn_press_date > 14:
