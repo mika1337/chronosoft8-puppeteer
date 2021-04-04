@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 # =============================================================================
 # Globals
-cs8p = None
-
 run_dir = os.path.dirname(os.path.realpath(__file__))
 config_file = os.path.join(run_dir,'config','websocket.ini')
+
+cs8p = None
 port = None
 thread = None
 event_loop = None
@@ -46,15 +46,17 @@ def start_plugin():
 
 def stop_plugin():
     logger.info('Stopping websocket plugin')
-    websockets_handle.close()
-    future = asyncio.run_coroutine_threadsafe(websockets_handle.wait_closed(),event_loop)
-    future.result()
-    logger.debug('Websocket closed')
 
-    event_loop.call_soon_threadsafe(event_loop.stop)
-    while event_loop.is_running():
-        logger.debug('Waiting for event loop to stop')
-        time.sleep(1)
+    if websockets_handle:
+        websockets_handle.close()
+        future = asyncio.run_coroutine_threadsafe(websockets_handle.wait_closed(),event_loop)
+        future.result()
+        logger.debug('Websocket closed')
+
+        event_loop.call_soon_threadsafe(event_loop.stop)
+        while event_loop.is_running():
+            logger.debug('Waiting for event loop to stop')
+            time.sleep(1)
 
 def main():
     global event_loop,websockets_handle
@@ -102,10 +104,7 @@ def process_input(json_input,endpoint):
                 cmd = data['cmd']
                 if cmd == 'get_channels':
                     channels = cs8p.get_channels()
-                    channels_with_name = dict()
-                    for channel in channels:
-                        channels_with_name[channel] = cs8p.get_channel_name(channel)
-                    output = { 'status': 'ok', 'channels': channels_with_name }
+                    output = { 'status': 'ok', 'channels': channels }
                 elif cmd == 'drive':
                     try:
                         cmd = data['args']['cmd']

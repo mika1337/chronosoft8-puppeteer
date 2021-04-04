@@ -32,7 +32,7 @@ class Remote:
         try:
             # Channel configuration
             self._channel_list = list()
-            for channel in config['Channels'].keys():
+            for channel in config['channels'].keys():
                 channel = int(channel)
                 if channel < 1 or channel > 8:
                     raise ValueError('Channel must be between 1 and 8')
@@ -48,12 +48,12 @@ class Remote:
                 raise ValueError('Channel 1 must be configured')
 
             # GPIO configuration
-            return_gpio_channel   = int(config['GPIO']['return'])
-            validate_gpio_channel = int(config['GPIO']['validate'])
-            up_gpio_channel       = int(config['GPIO']['up'])
-            stop_gpio_channel     = int(config['GPIO']['stop'])
-            down_gpio_channel     = int(config['GPIO']['down'])
-            power_gpio_channel    = int(config['GPIO']['power'])
+            return_gpio_channel   = int(config['gpio']['pins']['return'])
+            validate_gpio_channel = int(config['gpio']['pins']['validate'])
+            up_gpio_channel       = int(config['gpio']['pins']['up'])
+            stop_gpio_channel     = int(config['gpio']['pins']['stop'])
+            down_gpio_channel     = int(config['gpio']['pins']['down'])
+            power_gpio_channel    = int(config['gpio']['pins']['power'])
         except KeyError:
             logger.error('Missing parameter(s) in configuration file')
             raise
@@ -63,53 +63,57 @@ class Remote:
 
         active_high = True
         try:
-            active_low = config['GPIO']['active_low']
+            active_low = config['gpio']['config']['active_low']
         except:
             pass
 
         if active_low:
             active_high = False
 
+        self._debug = False
+        if 'debug' in config:
+            self._debug = config['debug']
+
         # Setup GPIOs
         self._buttons = dict()
-        self._buttons['return']   = GPIO( "Return"  , return_gpio_channel  , GPIO.OUT, 0, active_high=active_high)
-        self._buttons['validate'] = GPIO( "Validate", validate_gpio_channel, GPIO.OUT, 0, active_high=active_high)
-        self._buttons['up']       = GPIO( "Up"      , up_gpio_channel      , GPIO.OUT, 0, active_high=active_high)
-        self._buttons['stop']     = GPIO( "Stop"    , stop_gpio_channel    , GPIO.OUT, 0, active_high=active_high)
-        self._buttons['down']     = GPIO( "Down"    , down_gpio_channel    , GPIO.OUT, 0, active_high=active_high)
-        self._rly_power = GPIO( "Power"   , power_gpio_channel   , GPIO.OUT, 0, active_high=active_high)
+        self._buttons['return']   = GPIO( "Return"  , return_gpio_channel  , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
+        self._buttons['validate'] = GPIO( "Validate", validate_gpio_channel, GPIO.OUT, 0, active_high=active_high, debug=self._debug)
+        self._buttons['up']       = GPIO( "Up"      , up_gpio_channel      , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
+        self._buttons['stop']     = GPIO( "Stop"    , stop_gpio_channel    , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
+        self._buttons['down']     = GPIO( "Down"    , down_gpio_channel    , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
+        self._rly_power           = GPIO( "Power"   , power_gpio_channel   , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
 
         self._last_btn_press_date = 0
 
-    def start( self, fast_init=False ):
-        logger.debug('Waiting in case remote was powered on startup')
-        time.sleep(1)
-
-        logger.info('Powering up remote')
-        self._rly_power.set(1)
-        self._last_btn_press_date = time.time()
-        time.sleep(2)
-        self._press_button( self.BTN_VALIDATE )
-        self._press_button( self.BTN_VALIDATE )
-
-        # Sometimes the remote seems to boot with hour already set, in this case the preceeding validate button
-        # double press would lead to no being on main screen. Double press on return button let us return to
-        # main screen in all situation
-        self._press_button( self.BTN_RETURN )
-        self._press_button( self.BTN_RETURN )
-
-        if fast_init == True:
-            logger.warn('Fast init (no channel configuration)')
+    def start( self ):
+        if self._debug == True:
+            logger.warn('Debug enabled, not powering up remote')
         else:
+            logger.debug('Waiting in case remote was powered on startup')
+            time.sleep(1)
+
+            logger.info('Powering up remote')
+            self._rly_power.set(1)
+            self._last_btn_press_date = time.time()
+            time.sleep(2)
+            self._press_button( self.BTN_VALIDATE )
+            self._press_button( self.BTN_VALIDATE )
+
+            # Sometimes the remote seems to boot with hour already set, in this case the preceeding validate button
+            # double press would lead to no being on main screen. Double press on return button let us return to
+            # main screen in all situation
+            self._press_button( self.BTN_RETURN )
+            self._press_button( self.BTN_RETURN )
+
             logger.info('Configuring {} channels'.format(len(self._channel_list)))
             # Disable all channels (the first can't be disabled, but will be reinitialised)
-            self._press_button( self.BTN_VALIDATE, duration=3 )
+            self._press_button( self.BTN_VALIDATE, press_duration=3 )
             for channel in range( 8 ):
                 self._press_button( self.BTN_DOWN )
                 self._press_button( self.BTN_VALIDATE )
 
             # Enable selected channels
-            self._press_button( self.BTN_VALIDATE, duration=3 )
+            self._press_button( self.BTN_VALIDATE, press_duration=3 )
             for channel in range( 1, 9 ):
                 if channel in self._channel_list:
                     self._press_button( self.BTN_UP )
@@ -140,13 +144,13 @@ class Remote:
 
         logger.info('Sending channel {} {} order'.format(channel,command))
         if command == self.CMD_UP:
-            self._press_button(self.BTN_UP,duration=0.5)
+            self._press_button(self.BTN_UP,press_duration=1,release_duration=0.5)
         elif command == self.CMD_DOWN:
-            self._press_button(self.BTN_DOWN,duration=0.5)
+            self._press_button(self.BTN_DOWN,press_duration=1,release_duration=0.5)
         elif command == self.CMD_STOP:
-            self._press_button(self.BTN_STOP,duration=0.5)
+            self._press_button(self.BTN_STOP,press_duration=1,release_duration=0.5)
         elif command == self.CMD_INT:
-            self._press_button(self.BTN_STOP,self.BTN_DOWN,duration=0.5)
+            self._press_button(self.BTN_STOP,self.BTN_DOWN,press_duration=1,release_duration=0.5)
         else:
             logger.error('Unknown command {}'.format(command))
 
@@ -165,20 +169,22 @@ class Remote:
             self._buttons[self.BTN_VALIDATE].set(0)
             time.sleep(0.5)
 
+        press_duration = 0.1
+        release_duration = 0.2
         # Grab duration from parameters
-        if 'duration' in kwargs:
-            duration = kwargs['duration']
-        else:
-            duration=0.1
+        if 'press_duration' in kwargs:
+            press_duration = kwargs['press_duration']
+        if 'release_duration' in kwargs:
+            release_duration = kwargs['release_duration']
 
         # Drive buttons
         for btn in args:
             self._buttons[btn].set(1)
-        time.sleep(duration)
+        time.sleep(press_duration)
         for btn in args:
             self._buttons[btn].set(0)
         self._last_btn_press_date = time.time()
-        time.sleep(0.2)
+        time.sleep(release_duration)
 
 
 # =============================================================================

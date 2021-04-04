@@ -1,0 +1,53 @@
+{
+    "debug": false,
+    "channels":
+    {
+        "1":
+        {
+            "name": "Général"
+        },
+        "2":
+        {
+            "name": "Cuisine"
+        },
+        "3":
+        {
+            "name": "Salon 2"
+        },
+        "4":
+        {
+            "name": "Salon 1"
+        },
+        "5":
+        {
+            "name": "Entrée 2"
+        },
+        "6":
+        {
+            "name": "Entrée 1"
+        },
+        "7":
+        {
+            "name": "Chambre"
+        }
+    },
+
+    "plugins": [ "scheduling", "websocket" ],
+
+    "gpio":
+    {
+        "pins" :
+        {
+            "return"   : 16,
+            "validate" : 18,
+            "up"       : 11,
+            "stop"     : 13,
+            "down"     : 15,
+            "power"    : 22
+        },
+        "config" :
+        {
+            "active_low" : true
+        }
+    }
+}

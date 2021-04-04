@@ -3,7 +3,7 @@
 # =============================================================================
 # System imports
 import argparse
-import configparser
+import json
 import logging
 import logging.config
 import os
@@ -34,18 +34,25 @@ class Chronosoft8Puppet:
     CMD_SHUTDOWN = 'shutdown'
 
     def __init__(self):
-        # Read configuration file
         config_file = os.path.join( _config_path
-                                  , 'chronosoft8-puppeteer.ini')
-        self._config = configparser.ConfigParser()
-        self._config.read( config_file )
+                                  , 'chronosoft8-puppeteer.json')
+        try:
+            # Load configuration
+            self._config = json.load(open(config_file))
+        except:
+            logger.error('Failed to load config file {}'.format(config_file))
+            raise
+
+        self._debug = False
+        if 'debug' in self._config:
+            self._debug = self._config['debug']
 
         # Initialize remote object
         self._remote = Remote(self._config)
 
         # Read plugin list from config file
         try:
-            plugin_names = self._config['Plugins']['active'].split(',')
+            plugin_names = self._config['plugins']
         except KeyError:
             logger.error('Missing active plugins in configuration file {}'.format(config_file))
             raise
@@ -63,18 +70,22 @@ class Chronosoft8Puppet:
 
 
     def get_channels(self):
-        return self._remote.get_channels()
-    
-    def get_channel_name(self,channel):
-        try:
-            name = self._config['Channels'][str(channel)]
-        except:
-            return None
-        return name
+        return self._config['channels']
 
     def drive_channel(self,channel,command):
-        logger.debug('Queueing order for channel {}: {}'.format(channel,command))
-        self._cmd_queue.put( (channel,command) )
+        try:
+            channel_int = int(channel)
+        except:
+            for channel_name,channel_infos in self._config['channels'].items():
+                if channel_infos['name'] == channel:
+                    channel_int = int(channel_name)
+                    break
+        
+        if channel_int == None:
+            logger.error('Failed to identify channel {}'.format(channel))
+
+        logger.debug('Queueing order for channel {}: {}'.format(channel_int,command))
+        self._cmd_queue.put( (channel_int,command) )
 
     def start(self):
         # Initialize remote
@@ -102,6 +113,7 @@ class Chronosoft8Puppet:
             logger.debug('Processing order for channel {}: {}'.format(channel,command))
             self._remote.drive_channel( channel, command )
 
+    def stop(self):
         # Stop all plugins
         for (plugin_name,plugin) in self._plugins.items():
             plugin.stop_plugin()
@@ -133,7 +145,15 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     logger.info('Chronosoft8 Puppet starting')
 
-    cp = Chronosoft8Puppet()
-    cp.start()
+    try:
+        cp = Chronosoft8Puppet()
+    except:
+        logger.exception('Exception catch while initializing')
+    else:
+        try:
+            cp.start()
+        except:
+            logger.exception('Stopping on exception')
+        cp.stop()
 
     logger.info('Chronosoft8 Puppet stopping')
