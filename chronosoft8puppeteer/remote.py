@@ -185,33 +185,3 @@ class Remote:
             self._buttons[btn].set(0)
         self._last_btn_press_date = time.time()
         time.sleep(release_duration)
-
-
-# =============================================================================
-# Main
-if __name__ == '__main__':
-    # -------------------------------------------------------------------------
-    # Arg parse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d','--dev', help='enable development logging', action='store_true')
-    args = parser.parse_args()
-
-    # -------------------------------------------------------------------------
-    # Logging config
-    config_path = os.path.join( os.path.dirname(os.path.realpath(__file__))
-                              , 'config' )
-    if args.dev:
-        logging_conf_path = os.path.join( config_path, 'logging-dev.yaml' )
-    else:
-        logging_conf_path = os.path.join( config_path, 'logging-prod.yaml' )
-    with open(logging_conf_path, 'rt') as f:
-        config = yaml.safe_load(f.read())
-        logging.config.dictConfig(config)
-
-    # -------------------------------------------------------------------------
-    logger.info('Chronosoft8 Puppet starting')
-
-    cp = Chronosoft8Puppet()
-    cp.start()
-
-    logger.info('Chronosoft8 Puppet stopping')
