@@ -30,10 +30,21 @@ The remote has 5 buttons :
 - Down
 
 ### The mod
-I removed the PCB from the remote and using a multimeter I identified the via that could be used to simulate a button pressed :
+I removed the PCB from the remote and using a multimeter I identified the vias that could be used to simulate a button pressed :
 
-<img src="https://github.com/mika1337/chronosoft8-puppeteer/blob/master/img/remote_back.jpg?raw=true" width="500"/><img src="https://github.com/mika1337/chronosoft8-puppeteer/blob/master/img/remote_front.jpg?raw=true" width="500"/>
+<img src="https://github.com/mika1337/chronosoft8-puppeteer/blob/master/img/remote_back.jpg?raw=true" width="400"/><img src="https://github.com/mika1337/chronosoft8-puppeteer/blob/master/img/remote_front.jpg?raw=true" width="400"/>
 
+- Red : power supply (3V)
+- Black : ground
+- Blue : the "power" signal which is connected to a button input signal when pressed (all blue vias are linked together)
+- Yellow : buttons input :
+  - V : validate
+  - R : return
+  - U : up
+  - S : stop
+  - D : down
+
+As you might have notice on the back of the PCB (first image) the uo button input signal is close to a connector render it difficult to soder, using the other side of the PCB is far easier.
 
 ## Licensing
 This project is licensed under the MIT license.
