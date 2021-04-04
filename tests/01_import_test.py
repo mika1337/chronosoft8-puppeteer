@@ -2,4 +2,4 @@ def test_import():
     """
     Import test
     """
-    import shairportbridge
+    import chronosoft8puppeteer
