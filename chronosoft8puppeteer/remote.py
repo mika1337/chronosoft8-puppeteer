@@ -95,7 +95,7 @@ class Remote:
             logger.info('Powering up remote')
             self._rly_power.set(1)
             self._last_btn_press_date = time.time()
-            time.sleep(2)
+            time.sleep(1)
             self._press_button( self.BTN_VALIDATE )
             self._press_button( self.BTN_VALIDATE )
 

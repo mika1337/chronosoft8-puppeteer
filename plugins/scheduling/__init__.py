@@ -7,7 +7,6 @@ import json
 import logging
 import os
 import re
-import pytz.reference
 import threading
 
 # =============================================================================
@@ -65,8 +64,7 @@ def load_config():
         
         latitude  = float(config['location']['latitude'])
         longitude = float(config['location']['longitude'])
-        tzname = pytz.reference.LocalTimezone().tzname(datetime.datetime.now())
-        location_info = astral.LocationInfo('Name','Region',tzname,latitude,longitude)
+        location_info = astral.LocationInfo('Name','Region',"Time zone",latitude,longitude)
 
 def start_plugin():
     logger.info('Starting scheduling plugin')
@@ -122,7 +120,7 @@ def schedule():
             delta = program_date - now
             delta_seconds = delta.total_seconds()
             if delta_seconds < 0:
-                logger.info('Not scheduling {} as it is in the past'.format(program))
+                logger.debug('Not scheduling {} as it is in the past (date was {})'.format(program,program_date))
             else:
                 logger.info('Scheduling {} for channels {} with cmd {} at {}'.format(program,data['channels'],data['cmd'],program_date.astimezone()))
                 timer = threading.Timer(delta_seconds,execute_cmd, [program,data['channels'],data['cmd']] )
@@ -176,7 +174,8 @@ def get_event_date( param ):
         return functions[function_name](date1,date2)
 
     if param in ('dawn','sunrise','noon','sunset','dusk'):
-        return astral.sun.sun(location_info.observer)[param]
+        td = datetime.datetime.today()
+        return astral.sun.sun(location_info.observer,date=datetime.datetime.today())[param]
 
     else:
         today = datetime.date.today()

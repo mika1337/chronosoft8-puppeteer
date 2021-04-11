@@ -26,7 +26,7 @@ _config_path = os.path.join( os.path.dirname(os.path.realpath(__file__))
 
 # =============================================================================
 # Class
-class Chronosoft8Puppet:
+class Chronosoft8Puppeteer:
     CMD_UP = 'up'
     CMD_DOWN = 'down'
     CMD_STOP = 'stop'
@@ -143,10 +143,10 @@ if __name__ == '__main__':
         logging.config.dictConfig(config)
 
     # -------------------------------------------------------------------------
-    logger.info('Chronosoft8 Puppet starting')
+    logger.info('Chronosoft8 Puppeteer starting')
 
     try:
-        cp = Chronosoft8Puppet()
+        cp = Chronosoft8Puppeteer()
     except:
         logger.exception('Exception catch while initializing')
     else:
@@ -156,4 +156,4 @@ if __name__ == '__main__':
             logger.exception('Stopping on exception')
         cp.stop()
 
-    logger.info('Chronosoft8 Puppet stopping')
+    logger.info('Chronosoft8 Puppeteer stopping')

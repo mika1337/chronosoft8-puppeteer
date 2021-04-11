@@ -21,7 +21,7 @@ handlers:
         address: /dev/log
 
 root:
-    level: INFO
+    level: DEBUG
     handlers: [file,syslog]
 
 loggers:
@@ -29,3 +29,5 @@ loggers:
         level: ERROR
     websockets.protocol:
         level: INFO
+    websockets.server:
+        level: CRITICAL

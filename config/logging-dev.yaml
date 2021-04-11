@@ -20,3 +20,5 @@ loggers:
         level: ERROR
     websockets.protocol:
         level: INFO
+    websockets.server:
+        level: CRITICAL
