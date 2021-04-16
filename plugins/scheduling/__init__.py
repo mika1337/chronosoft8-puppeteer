@@ -18,13 +18,14 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # Globals
 run_dir = os.path.dirname(os.path.realpath(__file__))
-config_file = os.path.join(run_dir,'config','scheduling.json')
+location_config_file = os.path.join(run_dir,'config','location.json')
+programs_config_file = os.path.join(run_dir,'config','programs.json')
 weekdays = ('mon','tue','wed','thu','fri','sat','sun')
 
 cs8p = None
-config = None
 functions = dict()
 location_info = None
+programs_config = None
 timers = list()
 
 # =============================================================================
@@ -39,32 +40,34 @@ def init_plugin(cs8p_):
     load_config()
 
 def load_config():
-    global config,location_info
+    global location_info,programs_config
 
+    # Load location configuration
     try:
-        # Load configuration
-        config = json.load(open(config_file))
+        location_config = json.load(open(location_config_file))
     except:
-        logger.exception('Failed to load config file {}'.format(config_file))
-        config = None
+        logger.exception('Failed to load location config file {}'.format(location_config))
     else:
         # Check config file
-        if 'location' not in config:
-            logger.error('Missing location entry in config file {}'.format(config_file))
-            config = None
-        elif 'latitude' not in config['location'] or 'longitude' not in config['location']:
-            logger.error('Missing latitude and/or longitude entry in config file {}'.format(config_file))
-            config = None
-        elif 'scheduling' not in config:
-            logger.error('Missing scheduling entry in config file {}'.format(config_file))
-            config = None
-        elif 'enable' not in config['scheduling'] or 'programs' not in config['scheduling'] or 'channels' not in config['scheduling']:
-            logger.error('Missing programs and/or channel entry in config file {}'.format(config_file))
-            config = None
-        
-        latitude  = float(config['location']['latitude'])
-        longitude = float(config['location']['longitude'])
-        location_info = astral.LocationInfo('Name','Region',"Time zone",latitude,longitude)
+        if 'location' not in location_config:
+            logger.error('Missing location entry in config file {}'.format(location_config))
+        elif 'latitude' not in location_config['location'] or 'longitude' not in location_config['location']:
+            logger.error('Missing latitude and/or longitude entry in config file {}'.format(location_config))
+        else:
+            latitude  = float(location_config['location']['latitude'])
+            longitude = float(location_config['location']['longitude'])
+            location_info = astral.LocationInfo('Name','Region',"Time zone",latitude,longitude)
+
+    # Load programs
+    try:
+        programs_config = json.load(open(programs_config_file))
+    except:
+        logger.exception('Failed to load config file {}'.format(programs_config_file))
+        programs = None
+    else:
+        if 'programs' not in programs_config:
+            logger.error('Missing programs entry in config file {}'.format(programs_config_file))
+            programs_config = None
 
 def start_plugin():
     logger.info('Starting scheduling plugin')
@@ -80,6 +83,14 @@ def stop_plugin():
         timer.cancel()
     timers.clear()
 
+def get_programs():
+    return programs_config['programs']
+
+def set_programs(programs):
+    programs_config['programs'] = programs
+    schedule()
+    json.dump({'programs':programs},open(programs_config_file,'w'),indent=4)
+
 def schedule():
     global timers
 
@@ -87,45 +98,38 @@ def schedule():
         timer.cancel()
     timers.clear()
 
-    if config == None:
+    if location_info == None or programs_config == None:
         logger.error('Error while loading config file, plugin won\'t start')
-    elif config['scheduling']['enable'] == False:
-        logger.info('Scheduling disabled in config file')
     else:
-        active_schedules = dict()
+        active_programs = list()
         current_day = weekdays[datetime.date.today().weekday()]
         logger.debug('Current days is {}'.format(current_day))
 
-        for channels in config['scheduling']['channels']:
-            channel_list = channels.split(',')
+        for program in programs_config['programs']:
+            # Check if enable
+            if program['enable'] == False:
+                logger.debug('Program {} not scheduled: disabled'.format(program['name']))
+                continue
 
-            for days in config['scheduling']['channels'][channels]:
-                if current_day in days.split(','):
-                    for program in config['scheduling']['channels'][channels][days]:
-                        if program not in active_schedules:
-                            active_schedules[program] = { 'channels' : list() }
-                        active_schedules[program]['channels'].extend(channel_list)
+            # Check if program is for today
+            if current_day not in program['days']:
+                logger.debug('Program {} not scheduled: not for today'.format(program['name']))
+                continue
 
-        # Get schedule parameters
-        for program in active_schedules:
-            program_content = get_program_content(config['scheduling']['programs'][program])
-            active_schedules[program]['date'] = program_content['date']
-            active_schedules[program]['cmd']  = program_content['cmd']
-        logger.debug('Today active schedules: {}'.format(active_schedules))
-
-        # Schedule timers
-        for program,data in active_schedules.items():
-            program_date = data['date']
+            # Check if program is in the future
+            program_date = get_program_date(program['time'])
             now = datetime.datetime.now(program_date.tzinfo)
             delta = program_date - now
             delta_seconds = delta.total_seconds()
             if delta_seconds < 0:
-                logger.debug('Not scheduling {} as it is in the past (date was {})'.format(program,program_date))
-            else:
-                logger.info('Scheduling {} for channels {} with cmd {} at {}'.format(program,data['channels'],data['cmd'],program_date.astimezone()))
-                timer = threading.Timer(delta_seconds,execute_cmd, [program,data['channels'],data['cmd']] )
-                timer.start()
-                timers.append( timer )
+                logger.debug('Program {} not scheduled: in the past (date was {})'.format(program['name'],program_date))
+                continue
+
+            # Schedule program
+            logger.info('Program {} scheduled at {}'.format(program['name'],program_date.astimezone()))
+            timer = threading.Timer(delta_seconds,execute_command, [program['name'],program['shutters'],get_program_command(program['action'])] )
+            timer.start()
+            timers.append( timer )
 
     # Schedule next day scheduling
     now = datetime.datetime.now()
@@ -139,19 +143,12 @@ def schedule():
     timer.start()
     timers.append( timer )
 
-def execute_cmd(program, channels, cmd):
-    logger.info('Running {} for channels {} with cmd {}'.format(program,channels,cmd))
-    for channel in channels:
-        cs8p.drive_channel( channel, cmd )
+def execute_command(program_name, shutters, command):
+    logger.info('Running {} for shutters {} with command {}'.format(program_name,shutters,command))
+    for shutter in shutters:
+        cs8p.drive_shutter( shutter, command )
 
-def get_program_content( program ):
-    if 'event' in program and 'time' in program:
-        program_content = dict()
-        program_content['cmd']  = get_event_command(program['event'])
-        program_content['date']  = get_event_date(program['time'])
-        return program_content
-
-def get_event_command( event ):
+def get_program_command( event ):
     if event == 'open':
         return cs8p.CMD_UP
     elif event == 'close':
@@ -159,7 +156,7 @@ def get_event_command( event ):
     elif event.startswith('int'):
         return cs8p.CMD_INT
 
-def get_event_date( param ):
+def get_program_date( param ):
     if param.startswith('='):
         match = re.search( '^=([^(]*)\(([^,]*),([^)]*)\)$', param )
         if match == None:
@@ -169,8 +166,8 @@ def get_event_date( param ):
             param1        = match.group(2)
             param2        = match.group(3)
 
-            date1 = get_event_date(param1)
-            date2 = get_event_date(param2)
+            date1 = get_program_date(param1)
+            date2 = get_program_date(param2)
         return functions[function_name](date1,date2)
 
     if param in ('dawn','sunrise','noon','sunset','dusk'):

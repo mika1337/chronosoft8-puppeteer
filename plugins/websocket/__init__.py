@@ -74,13 +74,17 @@ async def on_client_connected(websocket,path):
 
     try:
         async for message in websocket:
-            logger.debug('Data received from {}: {}'.format(endpoint,message))
-            output = process_input(message,endpoint)
-            if output:
-                output = { 'cs8p' : output }
-                json_output = json.dumps( output )
-                logger.debug('Sending data to {}: {}'.format(endpoint,json_output))
-                await websocket.send(json_output)
+            try:
+                logger.debug('Data received from {}: {}'.format(endpoint,message))
+                output = process_input(message,endpoint)
+                if output:
+                    output = { 'cs8p' : output }
+                    json_output = json.dumps( output )
+                    logger.debug('Sending data to {}: {}'.format(endpoint,json_output))
+                    await websocket.send(json_output)
+            except:
+                logger.exception('Error while processing data from {}'.format(endpoint))
+                raise
     finally:
         logger.info('{} disconnected'.format(endpoint))
 
@@ -100,19 +104,31 @@ def process_input(json_input,endpoint):
             data = data['cs8p']
             logger.debug('data: {}'.format(data))
 
-            if 'cmd' in data:
-                cmd = data['cmd']
-                if cmd == 'get_channels':
-                    channels = cs8p.get_channels()
-                    output = { 'status': 'ok', 'channels': channels }
-                elif cmd == 'drive':
+            if 'command' in data:
+                command = data['command']
+                if command == 'get_shutters':
+                    shutters = cs8p.get_shutters()
+                    output = { 'status': 'ok', 'shutters': shutters }
+                elif command == 'get_programs':
+                    programs = cs8p.get_programs()
+                    output = { 'status': 'ok', 'programs': programs }
+                elif command == 'set_programs':
                     try:
-                        cmd = data['args']['cmd']
-                        channel = data['args']['channel']
+                        programs = data['args']['programs']
+                        cs8p.set_programs(programs)
+                    except:
+                        logger.exception('Failed to update programs')
+                        output = { 'status': 'error' }
+                    else:
+                        output = { 'status': 'ok' }
+                elif command == 'drive':
+                    try:
+                        command = data['args']['command']
+                        shutter = data['args']['shutter']
                     except:
                         output = { 'status': 'error' }
                     else:
-                        cs8p.drive_channel(channel,cmd)
+                        cs8p.drive_shutter(shutter,command)
                         output = { 'status': 'ok' }
     return output
                     

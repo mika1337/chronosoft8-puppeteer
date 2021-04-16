@@ -1,0 +1,70 @@
+{
+    "programs": [
+        {
+            "enable": true,
+            "name": "open morning working days",
+            "action": "open",
+            "time": "7:50",
+            "days": [
+                "mon",
+                "tue",
+                "wed",
+                "thu",
+                "fri"
+            ],
+            "shutters": [
+                "All"
+            ]
+        },
+        {
+            "enable": true,
+            "name": "open morning weekend days",
+            "action": "open",
+            "time": "10:00",
+            "days": [
+                "sat",
+                "sun"
+            ],
+            "shutters": [
+                "All"
+            ]
+        },
+        {
+            "enable": true,
+            "name": "close sunset",
+            "action": "close",
+            "time": "=mean(dusk,sunset)",
+            "days": [
+                "mon",
+                "tue",
+                "wed",
+                "thu",
+                "fri",
+                "sat",
+                "sun"
+            ],
+            "shutters": [
+                "All"
+            ]
+        },
+        {
+            "enable": true,
+            "name": "int midday",
+            "action": "int",
+            "time": "14:00",
+            "days": [
+                "mon",
+                "tue",
+                "wed",
+                "thu",
+                "fri",
+                "sat",
+                "sun"
+            ],
+            "shutters": [
+                "Entrance",
+                "Kitchen"
+            ]
+        }
+    ]
+}

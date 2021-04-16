@@ -27,26 +27,9 @@ class Remote:
     CMD_STOP = 'stop'
     CMD_INT  = 'int'
 
-    def __init__( self, config ):
-        # Load configuration
+    def __init__( self, config, shutters ):
+        # Process main configuration
         try:
-            # Channel configuration
-            self._channel_list = list()
-            for channel in config['channels'].keys():
-                channel = int(channel)
-                if channel < 1 or channel > 8:
-                    raise ValueError('Channel must be between 1 and 8')
-                if channel in self._channel_list:
-                    raise ValueError('Duplicate channel {}'.format(channel))
-                self._channel_list.append(channel)
-
-            self._channel_list.sort()
-            if len(self._channel_list) == 0:
-                raise ValueError('No channel configured')
-
-            if 1 not in self._channel_list:
-                raise ValueError('Channel 1 must be configured')
-
             # GPIO configuration
             return_gpio_channel   = int(config['gpio']['pins']['return'])
             validate_gpio_channel = int(config['gpio']['pins']['validate'])
@@ -55,10 +38,10 @@ class Remote:
             down_gpio_channel     = int(config['gpio']['pins']['down'])
             power_gpio_channel    = int(config['gpio']['pins']['power'])
         except KeyError:
-            logger.error('Missing parameter(s) in configuration file')
+            logger.error('Missing parameter(s) in main configuration file')
             raise
         except ValueError:
-            logger.error('Invalid parameter value in configuration file')
+            logger.error('Invalid parameter value in main configuration file')
             raise
 
         active_high = True
@@ -66,13 +49,40 @@ class Remote:
             active_low = config['gpio']['config']['active_low']
         except:
             pass
-
-        if active_low:
-            active_high = False
+        else:
+            if active_low:
+                active_high = False
 
         self._debug = False
         if 'debug' in config:
             self._debug = config['debug']
+
+        # Process shutters configuration
+        try:
+            # Channel configuration
+            self._shutters = dict()
+            self._channel_list = list()
+            for shutter in shutters:
+                channel = int(shutter['channel'])
+                if channel < 1 or channel > 8:
+                    raise ValueError('Channel must be between 1 and 8')
+                if channel in self._channel_list:
+                    raise ValueError('Duplicate channel {}'.format(channel))
+                self._channel_list.append(channel)
+                self._shutters[shutter['name']] = shutter['channel']
+
+            self._channel_list.sort()
+            if len(self._channel_list) == 0:
+                raise ValueError('No channel configured')
+
+            if 1 not in self._channel_list:
+                raise ValueError('Channel 1 must be configured')
+        except KeyError:
+            logger.error('Missing parameter(s) in shutters configuration file')
+            raise
+        except ValueError:
+            logger.error('Invalid parameter value in shutters configuration file')
+            raise
 
         # Setup GPIOs
         self._buttons = dict()
@@ -128,10 +138,11 @@ class Remote:
         logger.info('Powering down remote')
         self._rly_power.set(0)
 
-    def drive_channel( self, channel, command ):
-        if channel not in self._channel_list:
-            logger.error('Can\'t drive not configured channel {}'.format(channel))
+    def drive_shutter( self, shutter, command ):
+        if shutter not in self._shutters:
+            logger.error('Can\'t drive unknown shutter {}'.format(shutter))
             return
+        channel = self._shutters[shutter]
 
         # Change channel to targeted
         if self._channel_list[self._current_channel_index] != channel:
@@ -153,9 +164,6 @@ class Remote:
             self._press_button(self.BTN_STOP,self.BTN_DOWN,press_duration=1,release_duration=0.5)
         else:
             logger.error('Unknown command {}'.format(command))
-
-    def get_channels(self):
-        return self._channel_list
 
     def _press_button( self, *args, **kwargs ):
         # Check if remote is sleeping

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # =============================================================================
 # Globals
-_config_path = os.path.join( os.path.dirname(os.path.realpath(__file__))
+config_path = os.path.join( os.path.dirname(os.path.realpath(__file__))
                            , 'config' )
 
 # =============================================================================
@@ -34,21 +34,32 @@ class Chronosoft8Puppeteer:
     CMD_SHUTDOWN = 'shutdown'
 
     def __init__(self):
-        config_file = os.path.join( _config_path
-                                  , 'chronosoft8-puppeteer.json')
+        # Load main config
+        main_config_file = os.path.join( config_path
+                                       , 'chronosoft8-puppeteer.json')
         try:
-            # Load configuration
-            self._config = json.load(open(config_file))
+            self._config = json.load(open(main_config_file))
         except:
-            logger.error('Failed to load config file {}'.format(config_file))
+            logger.error('Failed to load config file {}'.format(main_config_file))
             raise
 
+        # Load shutters config
+        shutters_config_file = os.path.join( config_path
+                                           , 'shutters.json')
+        try:
+            shutters_config = json.load(open(shutters_config_file))
+            self._shutters = shutters_config['shutters']
+        except:
+            logger.error('Failed to load config file {}'.format(shutters_config_file))
+            raise
+
+        # Debug
         self._debug = False
         if 'debug' in self._config:
             self._debug = self._config['debug']
 
         # Initialize remote object
-        self._remote = Remote(self._config)
+        self._remote = Remote(self._config,self._shutters)
 
         # Read plugin list from config file
         try:
@@ -69,23 +80,17 @@ class Chronosoft8Puppeteer:
         self._cmd_queue = queue.Queue()
 
 
-    def get_channels(self):
-        return self._config['channels']
+    def get_shutters(self):
+        return self._shutters
 
-    def drive_channel(self,channel,command):
-        try:
-            channel_int = int(channel)
-        except:
-            for channel_name,channel_infos in self._config['channels'].items():
-                if channel_infos['name'] == channel:
-                    channel_int = int(channel_name)
-                    break
-        
-        if channel_int == None:
-            logger.error('Failed to identify channel {}'.format(channel))
+    def drive_shutter(self,shutter,command):
+        self._cmd_queue.put( (shutter,command) )
 
-        logger.debug('Queueing order for channel {}: {}'.format(channel_int,command))
-        self._cmd_queue.put( (channel_int,command) )
+    def get_programs(self):
+        return self._plugins['scheduling'].get_programs()
+
+    def set_programs(self,programs):
+        return self._plugins['scheduling'].set_programs(programs)
 
     def start(self):
         # Initialize remote
@@ -103,15 +108,15 @@ class Chronosoft8Puppeteer:
         # Process command queue
         while True:
             cmd = self._cmd_queue.get()
-            channel = cmd[0]
+            shutter = cmd[0]
             command = cmd[1]
 
             if command == self.CMD_SHUTDOWN:
                 logger.info('Received shutdown command')
                 break
 
-            logger.debug('Processing order for channel {}: {}'.format(channel,command))
-            self._remote.drive_channel( channel, command )
+            logger.debug('Processing order for shutter {}: {}'.format(shutter,command))
+            self._remote.drive_shutter( shutter, command )
 
     def stop(self):
         # Stop all plugins

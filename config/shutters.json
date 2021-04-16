@@ -1,0 +1,33 @@
+{
+    "shutters":
+    [
+        {
+            "name": "Général",
+            "channel": 1
+        },
+        {
+            "name": "Entrée 1",
+            "channel": 6
+        },
+        {
+            "name": "Entrée 2",
+            "channel": 5
+        },
+        {
+            "name": "Salon 1",
+            "channel": 4
+        },
+        {
+            "name": "Salon 2",
+            "channel": 3
+        },
+        {
+            "name": "Cuisine",
+            "channel": 2
+        },
+        {
+            "name": "Chambre",
+            "channel": 7
+        }
+    ]
+}
