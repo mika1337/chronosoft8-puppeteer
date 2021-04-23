@@ -15,7 +15,11 @@
         },
         {
             "name": "Salon 1",
-            "channel": 4
+            "channel": 4,
+            "override":
+            {
+                "int": ["down","wait 16","stop"]
+            }
         },
         {
             "name": "Salon 2",
@@ -23,7 +27,11 @@
         },
         {
             "name": "Cuisine",
-            "channel": 2
+            "channel": 2,
+            "override":
+            {
+                "int": ["down","wait 12","stop"]
+            }
         },
         {
             "name": "Chambre",

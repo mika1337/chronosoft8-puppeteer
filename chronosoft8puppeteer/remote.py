@@ -59,7 +59,7 @@ class Remote:
 
         # Process shutters configuration
         try:
-            # Channel configuration
+            # Shutter/channel configuration
             self._shutters = dict()
             self._channel_list = list()
             for shutter in shutters:
@@ -69,7 +69,7 @@ class Remote:
                 if channel in self._channel_list:
                     raise ValueError('Duplicate channel {}'.format(channel))
                 self._channel_list.append(channel)
-                self._shutters[shutter['name']] = shutter['channel']
+                self._shutters[shutter['name']] = shutter
 
             self._channel_list.sort()
             if len(self._channel_list) == 0:
@@ -142,7 +142,7 @@ class Remote:
         if shutter not in self._shutters:
             logger.error('Can\'t drive unknown shutter {}'.format(shutter))
             return
-        channel = self._shutters[shutter]
+        channel = self._shutters[shutter]['channel']
 
         # Change channel to targeted
         if self._channel_list[self._current_channel_index] != channel:
@@ -153,17 +153,31 @@ class Remote:
                 if self._current_channel_index >= len(self._channel_list):
                     self._current_channel_index = 0
 
-        logger.info('Sending channel {} {} order'.format(channel,command))
-        if command == self.CMD_UP:
-            self._press_button(self.BTN_UP,press_duration=1,release_duration=0.5)
-        elif command == self.CMD_DOWN:
-            self._press_button(self.BTN_DOWN,press_duration=1,release_duration=0.5)
-        elif command == self.CMD_STOP:
-            self._press_button(self.BTN_STOP,press_duration=1,release_duration=0.5)
-        elif command == self.CMD_INT:
-            self._press_button(self.BTN_STOP,self.BTN_DOWN,press_duration=1,release_duration=0.5)
-        else:
-            logger.error('Unknown command {}'.format(command))
+        # Check if override exists for current shutter
+        try:
+            commands = self._shutters[shutter]['override'][command]
+        except:
+            commands = [command,]
+
+        for command in commands:
+            if command == self.CMD_UP:
+                logger.info('Sending channel {} {} order'.format(channel,command))
+                self._press_button(self.BTN_UP,press_duration=1,release_duration=0.5)
+            elif command == self.CMD_DOWN:
+                logger.info('Sending channel {} {} order'.format(channel,command))
+                self._press_button(self.BTN_DOWN,press_duration=1,release_duration=0.5)
+            elif command == self.CMD_STOP:
+                logger.info('Sending channel {} {} order'.format(channel,command))
+                self._press_button(self.BTN_STOP,press_duration=1,release_duration=0.5)
+            elif command == self.CMD_INT:
+                logger.info('Sending channel {} {} order'.format(channel,command))
+                self._press_button(self.BTN_STOP,self.BTN_DOWN,press_duration=1,release_duration=0.5)
+            elif command.startswith('wait '):
+                seconds = float(command.split(' ')[1])
+                logger.info('Waiting {} seconds for channel {}'.format(seconds,channel))
+                time.sleep(seconds)
+            else:
+                logger.error('Unknown command {}'.format(command))
 
     def _press_button( self, *args, **kwargs ):
         # Check if remote is sleeping
@@ -178,7 +192,7 @@ class Remote:
             time.sleep(0.5)
 
         press_duration = 0.1
-        release_duration = 0.2
+        release_duration = 0.1
         # Grab duration from parameters
         if 'press_duration' in kwargs:
             press_duration = kwargs['press_duration']
