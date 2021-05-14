@@ -192,7 +192,7 @@ class Remote:
             time.sleep(0.5)
 
         press_duration = 0.1
-        release_duration = 0.1
+        release_duration = 0.13
         # Grab duration from parameters
         if 'press_duration' in kwargs:
             press_duration = kwargs['press_duration']

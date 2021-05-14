@@ -30,7 +30,7 @@
             "channel": 2,
             "override":
             {
-                "int": ["down","wait 12","stop"]
+                "int": ["down","wait 14","stop"]
             }
         },
         {
