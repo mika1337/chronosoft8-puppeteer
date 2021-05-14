@@ -109,6 +109,9 @@ def process_input(json_input,endpoint):
                 if command == 'get_shutters':
                     shutters = cs8p.get_shutters()
                     output = { 'status': 'ok', 'shutters': shutters }
+                elif command == 'get_groups':
+                    groups = cs8p.get_groups()
+                    output = { 'status': 'ok', 'groups': groups }
                 elif command == 'get_programs':
                     programs = cs8p.get_programs()
                     output = { 'status': 'ok', 'programs': programs }
@@ -121,7 +124,7 @@ def process_input(json_input,endpoint):
                         output = { 'status': 'error' }
                     else:
                         output = { 'status': 'ok' }
-                elif command == 'drive':
+                elif command == 'drive_shutter':
                     try:
                         command = data['args']['command']
                         shutter = data['args']['shutter']
@@ -129,6 +132,15 @@ def process_input(json_input,endpoint):
                         output = { 'status': 'error' }
                     else:
                         cs8p.drive_shutter(shutter,command)
+                        output = { 'status': 'ok' }
+                elif command == 'drive_group':
+                    try:
+                        command = data['args']['command']
+                        group   = data['args']['group']
+                    except:
+                        output = { 'status': 'error' }
+                    else:
+                        cs8p.drive_group(group,command)
                         output = { 'status': 'ok' }
     return output
                     

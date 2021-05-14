@@ -53,6 +53,16 @@ class Chronosoft8Puppeteer:
             logger.error('Failed to load config file {}'.format(shutters_config_file))
             raise
 
+        # Load groups config
+        groups_config_file = os.path.join( config_path
+                                         , 'groups.json')
+        try:
+            groups_config = json.load(open(groups_config_file))
+            self._groups = groups_config['groups']
+        except:
+            logger.error('Failed to load config file {}'.format(groups_config_file))
+            raise
+
         # Debug
         self._debug = False
         if 'debug' in self._config:
@@ -83,8 +93,18 @@ class Chronosoft8Puppeteer:
     def get_shutters(self):
         return self._shutters
 
+    def get_groups(self):
+        return self._groups
+
     def drive_shutter(self,shutter,command):
         self._cmd_queue.put( (shutter,command) )
+
+    def drive_group(self,group,command):
+        for group_data in self._groups:
+            if group_data['name'] == group:
+                for shutter in group_data['shutters']:
+                    self._cmd_queue.put( (shutter,command) )
+                break
 
     def get_programs(self):
         return self._plugins['scheduling'].get_programs()

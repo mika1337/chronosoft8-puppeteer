@@ -1,0 +1,29 @@
+{
+    "groups":
+    [
+        {
+            "name": "Général",
+            "shutters": [ "Cuisine","Salon 2","Salon 1","Entrée 2","Entrée 1","Chambre" ]
+        },
+        {
+            "name": "Entrée",
+            "shutters": [ "Entrée 2", "Entrée 1" ]
+        },
+        {
+            "name": "Salon",
+            "shutters": [ "Salon 2", "Salon 1" ]
+        },
+        {
+            "name": "Cuisine",
+            "shutters": [ "Cuisine" ]
+        },
+        {
+            "name": "Chambre",
+            "shutters": [ "Chambre" ]
+        },
+        {
+            "name": "Maison",
+            "shutters": [ "Cuisine","Salon 2","Salon 1","Entrée 2","Entrée 1" ]
+        }
+    ]
+}
