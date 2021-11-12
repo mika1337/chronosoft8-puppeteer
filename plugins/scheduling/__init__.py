@@ -164,9 +164,15 @@ def get_program_date( param ):
 
     elif param['source'] == 'sun':
         event = param['event']
+        offset = 0
+        try:
+            offset = int(param['offset'])
+        except:
+            pass
+
         if event in ('dawn','sunrise','noon','sunset','dusk'):
             td = datetime.datetime.today()
-            return astral.sun.sun(location_info.observer,date=datetime.datetime.today())[event]
+            return astral.sun.sun(location_info.observer,date=datetime.datetime.today())[event] + datetime.timedelta(minutes=offset)
         else:
             logger.error('Unsupported sun event "{}"'.format(event))
             return datetime.datetime.datetime(1900,1,1)
@@ -174,3 +180,4 @@ def get_program_date( param ):
     else:
         logger.error('Unsupported trigger source "{}"'.format(param['source']))
         return datetime.datetime.datetime(1900,1,1)
+
