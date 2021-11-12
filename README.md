@@ -62,7 +62,8 @@ As the remote requires 3V power supply I used a 3V3 pin from the Raspberry Pi to
 
 The remote buttons and power supply are connected to the relay 6 channels. The relay itself is connected to a Raspberry Pi GPIOs.
 
-TODO: add a picture of the final mount
+![Chronosoft 8 on a table](https://github.com/mika1337/chronosoft8-puppeteer/blob/master/img/cs8p_on_table.jpg?raw=true)
+![Chronosoft 8 in a box](https://github.com/mika1337/chronosoft8-puppeteer/blob/master/img/cs8p_in_box.jpg?raw=true)
 
 ## Software part
 Chronosoft8 puppeteer is a python software to drive the remote. It configures the remote channels (up to 8) and has plugins to manage the remote :
