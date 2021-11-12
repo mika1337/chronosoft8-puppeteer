@@ -4,7 +4,11 @@
             "enable": true,
             "name": "open morning working days",
             "action": "open",
-            "time": "7:50",
+            "trigger":
+            {
+                "source": "time",
+                "time": "07:50"
+            },
             "days": [
                 "mon",
                 "tue",
@@ -20,7 +24,11 @@
             "enable": true,
             "name": "open morning weekend days",
             "action": "open",
-            "time": "10:00",
+            "trigger":
+            {
+                "source": "time",
+                "time": "10:00"
+            },
             "days": [
                 "sat",
                 "sun"
@@ -33,7 +41,11 @@
             "enable": true,
             "name": "close sunset",
             "action": "close",
-            "time": "=mean(dusk,sunset)",
+            "trigger":
+            {
+                "source": "sun",
+                "event": "sunset"
+            },
             "days": [
                 "mon",
                 "tue",
@@ -51,7 +63,11 @@
             "enable": true,
             "name": "int midday",
             "action": "int",
-            "time": "14:00",
+            "trigger":
+            {
+                "source": "time",
+                "time": "14:00"
+            },
             "days": [
                 "mon",
                 "tue",

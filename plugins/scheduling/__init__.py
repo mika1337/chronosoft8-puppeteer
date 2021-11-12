@@ -23,7 +23,6 @@ programs_config_file = os.path.join(run_dir,'config','programs.json')
 weekdays = ('mon','tue','wed','thu','fri','sat','sun')
 
 cs8p = None
-functions = dict()
 location_info = None
 programs_config = None
 timers = list()
@@ -31,11 +30,10 @@ timers = list()
 # =============================================================================
 # Functions
 def init_plugin(cs8p_):
-    global cs8p,functions
+    global cs8p
 
     logger.info('Initializing scheduling plugin')
     cs8p = cs8p_
-    functions['mean'] = compute_mean
 
     load_config()
 
@@ -117,7 +115,7 @@ def schedule():
                 continue
 
             # Check if program is in the future
-            program_date = get_program_date(program['time'])
+            program_date = get_program_date(program['trigger'])
             now = datetime.datetime.now(program_date.tzinfo)
             delta = program_date - now
             delta_seconds = delta.total_seconds()
@@ -157,36 +155,22 @@ def get_program_command( event ):
         return cs8p.CMD_INT
 
 def get_program_date( param ):
-    if param.startswith('='):
-        match = re.search( '^=([^(]*)\(([^,]*),([^)]*)\)$', param )
-        if match == None:
-            logger.error('Failed to parse date "{}"'.format(param))
-        else:
-            function_name = match.group(1)
-            param1        = match.group(2)
-            param2        = match.group(3)
-
-            date1 = get_program_date(param1)
-            date2 = get_program_date(param2)
-        return functions[function_name](date1,date2)
-
-    if param in ('dawn','sunrise','noon','sunset','dusk'):
-        td = datetime.datetime.today()
-        return astral.sun.sun(location_info.observer,date=datetime.datetime.today())[param]
-
-    else:
+    if param['source'] == 'time':
+        time = param['time']
         today = datetime.date.today()
-        date = datetime.datetime.strptime(param,'%H:%M')
+        date = datetime.datetime.strptime(time,'%H:%M')
         date = date.replace( year=today.year, month=today.month, day=today.day)
         return date
 
-def compute_mean(date1,date2):
-    if date1 < date2:
-        min_date = date1
-        max_date = date2
-    else:
-        min_date = date2
-        max_date = date1
+    elif param['source'] == 'sun':
+        event = param['event']
+        if event in ('dawn','sunrise','noon','sunset','dusk'):
+            td = datetime.datetime.today()
+            return astral.sun.sun(location_info.observer,date=datetime.datetime.today())[event]
+        else:
+            logger.error('Unsupported sun event "{}"'.format(event))
+            return datetime.datetime.datetime(1900,1,1)
 
-    delta = date2 - date1
-    return date1 + (delta/2)
+    else:
+        logger.error('Unsupported trigger source "{}"'.format(param['source']))
+        return datetime.datetime.datetime(1900,1,1)
