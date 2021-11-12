@@ -120,7 +120,7 @@ def schedule():
             delta = program_date - now
             delta_seconds = delta.total_seconds()
             if delta_seconds < 0:
-                logger.debug('Program {} not scheduled: in the past (date was {})'.format(program['name'],program_date))
+                logger.debug('Program {} not scheduled: in the past (date was {})'.format(program['name'],program_date.astimezone()))
                 continue
 
             # Schedule program
