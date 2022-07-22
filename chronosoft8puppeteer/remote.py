@@ -163,16 +163,16 @@ class Remote:
         for command in commands:
             if command == self.CMD_UP:
                 logger.info('Sending channel {} {} order'.format(channel,command))
-                self._press_button(self.BTN_UP,press_duration=2,release_duration=0.5)
+                self._press_button(self.BTN_UP,press_duration=2.5,release_duration=0.5)
             elif command == self.CMD_DOWN:
                 logger.info('Sending channel {} {} order'.format(channel,command))
-                self._press_button(self.BTN_DOWN,press_duration=2,release_duration=0.5)
+                self._press_button(self.BTN_DOWN,press_duration=2.5,release_duration=0.5)
             elif command == self.CMD_STOP:
                 logger.info('Sending channel {} {} order'.format(channel,command))
-                self._press_button(self.BTN_STOP,press_duration=2,release_duration=0.5)
+                self._press_button(self.BTN_STOP,press_duration=2.5,release_duration=0.5)
             elif command == self.CMD_INT:
                 logger.info('Sending channel {} {} order'.format(channel,command))
-                self._press_button(self.BTN_STOP,self.BTN_DOWN,press_duration=2,release_duration=0.5)
+                self._press_button(self.BTN_STOP,self.BTN_DOWN,press_duration=2.5,release_duration=0.5)
             elif command.startswith('wait '):
                 seconds = float(command.split(' ')[1])
                 logger.info('Waiting {} seconds for channel {}'.format(seconds,channel))
