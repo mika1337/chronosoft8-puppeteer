@@ -1,2 +1,3 @@
-from .gpio   import GPIO
-from .remote import Remote
+from .gpio       import GPIO
+from .parameters import Parameters
+from .remote     import Remote

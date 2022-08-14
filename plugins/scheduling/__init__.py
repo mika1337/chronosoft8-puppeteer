@@ -6,7 +6,6 @@ import datetime
 import json
 import logging
 import os
-import re
 import threading
 
 # =============================================================================
@@ -61,11 +60,9 @@ def load_config():
         programs_config = json.load(open(programs_config_file))
     except:
         logger.exception('Failed to load config file {}'.format(programs_config_file))
-        programs = None
     else:
         if 'programs' not in programs_config:
             logger.error('Missing programs entry in config file {}'.format(programs_config_file))
-            programs_config = None
 
 def start_plugin():
     logger.info('Starting scheduling plugin')
@@ -82,6 +79,8 @@ def stop_plugin():
     timers.clear()
 
 def get_programs():
+    if programs_config == None or 'programs' not in programs_config:
+        return None
     return programs_config['programs']
 
 def set_programs(programs):
@@ -129,17 +128,17 @@ def schedule():
             timer.start()
             timers.append( timer )
 
-    # Schedule next day scheduling
-    now = datetime.datetime.now()
-    date = now.replace( hour=0, minute=1,second=0,microsecond=0 )
-    tomorrow = date + datetime.timedelta(days=1)
-    delta = tomorrow - now
-    delta_seconds = delta.total_seconds()
+        # Schedule next day scheduling
+        now = datetime.datetime.now()
+        date = now.replace( hour=0, minute=1,second=0,microsecond=0 )
+        tomorrow = date + datetime.timedelta(days=1)
+        delta = tomorrow - now
+        delta_seconds = delta.total_seconds()
 
-    logger.info('Scheduling next day scheduling')
-    timer = threading.Timer(delta_seconds,schedule)
-    timer.start()
-    timers.append( timer )
+        logger.info('Scheduling next day scheduling')
+        timer = threading.Timer(delta_seconds,schedule)
+        timer.start()
+        timers.append( timer )
 
 def execute_command(program_name, shutters, command):
     logger.info('Running {} for shutters {} with command {}'.format(program_name,shutters,command))

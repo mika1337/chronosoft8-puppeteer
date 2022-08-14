@@ -1,7 +1,6 @@
 # =============================================================================
 # System imports
 import asyncio
-import configparser
 import logging
 import os
 import json
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # Globals
 run_dir = os.path.dirname(os.path.realpath(__file__))
-config_file = os.path.join(run_dir,'config','websocket.ini')
+config_file = os.path.join(run_dir,'config','websocket.json')
 
 cs8p = None
 port = None
@@ -33,9 +32,11 @@ def init_plugin(cs8p_):
 
     cs8p = cs8p_
 
-    config = configparser.ConfigParser()
-    config.read( config_file )
-    port = config['websocket']['port']
+    try:
+        config = json.load(open(config_file))
+        port = config['port']
+    except:
+        logger.exception('Failed to load config file {}'.format(config_file))
 
 def start_plugin():
     global thread

@@ -7,7 +7,7 @@ import time
 
 # =============================================================================
 # Local imports
-from chronosoft8puppeteer import GPIO
+from chronosoft8puppeteer import GPIO,Parameters
 
 # =============================================================================
 # Logger setup
@@ -105,7 +105,7 @@ class Remote:
             logger.info('Powering up remote')
             self._relay_power.set(1)
             self._last_btn_press_date = time.time()
-            time.sleep(1)
+            time.sleep(Parameters.remote_boot_duration)
             self._press_button( self.BTN_VALIDATE )
             self._press_button( self.BTN_VALIDATE )
 
@@ -114,7 +114,7 @@ class Remote:
             # main screen in all situation
             self._press_button( self.BTN_RETURN )
             self._press_button( self.BTN_RETURN )
-            time.sleep(1)
+            time.sleep(Parameters.remote_boot_duration)
 
             logger.info('Configuring {} channels'.format(len(self._channel_list)))
             # Disable all channels (the first can't be disabled, but will be reinitialised)
@@ -163,16 +163,24 @@ class Remote:
         for command in commands:
             if command == self.CMD_UP:
                 logger.info('Sending channel {} {} order'.format(channel,command))
-                self._press_button(self.BTN_UP,press_duration=1.5,release_duration=0.2)
+                self._press_button( self.BTN_UP
+                                  , press_duration  =Parameters.remote_cmd_button_press_duration
+                                  , release_duration=Parameters.remote_cmd_button_release_duration )
             elif command == self.CMD_DOWN:
                 logger.info('Sending channel {} {} order'.format(channel,command))
-                self._press_button(self.BTN_DOWN,press_duration=1.5,release_duration=0.2)
+                self._press_button( self.BTN_DOWN
+                                  , press_duration  =Parameters.remote_cmd_button_press_duration
+                                  , release_duration=Parameters.remote_cmd_button_release_duration )
             elif command == self.CMD_STOP:
                 logger.info('Sending channel {} {} order'.format(channel,command))
-                self._press_button(self.BTN_STOP,press_duration=1.5,release_duration=0.2)
+                self._press_button( self.BTN_STOP
+                                  , press_duration  =Parameters.remote_cmd_button_press_duration
+                                  , release_duration=Parameters.remote_cmd_button_release_duration )
             elif command == self.CMD_INT:
                 logger.info('Sending channel {} {} order'.format(channel,command))
-                self._press_button(self.BTN_STOP,self.BTN_DOWN,press_duration=1.5,release_duration=0.2)
+                self._press_button( self.BTN_STOP,self.BTN_DOWN
+                                  , press_duration  =Parameters.remote_cmd_button_press_duration
+                                  , release_duration=Parameters.remote_cmd_button_release_duration )
             elif command.startswith('wait '):
                 seconds = float(command.split(' ')[1])
                 logger.info('Waiting {} seconds for channel {}'.format(seconds,channel))
@@ -183,17 +191,17 @@ class Remote:
     def _press_button( self, *args, **kwargs ):
         # Check if remote is sleeping
         now = time.time()
-        if now - self._last_btn_press_date > 14:
-            if now - self._last_btn_press_date < 16:
-                time.sleep(1)
+        if now - self._last_btn_press_date > Parameters.remote_sleep_timer_duration - Parameters.remote_sleep_timer_margin:
+            if now - self._last_btn_press_date < Parameters.remote_sleep_timer_duration:
+                time.sleep(Parameters.remote_sleep_timer_margin)
             logger.debug('Waking remote from sleep')
             self._buttons[self.BTN_VALIDATE].set(1)
-            time.sleep(0.1)
+            time.sleep(Parameters.remote_wake_button_press_duration)
             self._buttons[self.BTN_VALIDATE].set(0)
-            time.sleep(0.5)
+            time.sleep(Parameters.remote_wake_button_release_duration)
 
-        press_duration = 0.1
-        release_duration = 0.13
+        press_duration   = Parameters.remote_menu_button_press_duration
+        release_duration = Parameters.remote_menu_button_release_duration
         # Grab duration from parameters
         if 'press_duration' in kwargs:
             press_duration = kwargs['press_duration']

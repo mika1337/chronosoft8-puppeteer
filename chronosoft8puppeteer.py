@@ -3,6 +3,7 @@
 # =============================================================================
 # System imports
 import argparse
+import datetime
 import json
 import logging
 import logging.config
@@ -87,7 +88,7 @@ class Chronosoft8Puppeteer:
             self._plugins[plugin_name] = _locals['plugin_handle']
 
         # Initialize command queue
-        self._cmd_queue = queue.Queue()
+        self._cmd_queue = queue.PriorityQueue()
 
 
     def get_shutters(self):
@@ -97,13 +98,20 @@ class Chronosoft8Puppeteer:
         return self._groups
 
     def drive_shutter(self,shutter,command):
-        self._cmd_queue.put( (shutter,command) )
+        priority = 2
+
+        # Stop commands are executed first
+        if command == self.CMD_STOP:
+            priority = 1
+        
+        self._cmd_queue.put( ( priority, datetime.datetime.now()
+                             , shutter, command ) )
 
     def drive_group(self,group,command):
         for group_data in self._groups:
             if group_data['name'] == group:
                 for shutter in group_data['shutters']:
-                    self._cmd_queue.put( (shutter,command) )
+                    self.drive_shutter( shutter,command )
                 break
 
     def get_programs(self):
@@ -128,8 +136,8 @@ class Chronosoft8Puppeteer:
         # Process command queue
         while True:
             cmd = self._cmd_queue.get()
-            shutter = cmd[0]
-            command = cmd[1]
+            shutter = cmd[2]
+            command = cmd[3]
 
             if command == self.CMD_SHUTDOWN:
                 logger.info('Received shutdown command')
