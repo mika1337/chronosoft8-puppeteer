@@ -91,7 +91,7 @@ class Remote:
         self._buttons['up']       = GPIO( "Up"      , up_gpio_channel      , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
         self._buttons['stop']     = GPIO( "Stop"    , stop_gpio_channel    , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
         self._buttons['down']     = GPIO( "Down"    , down_gpio_channel    , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
-        self._rly_power           = GPIO( "Power"   , power_gpio_channel   , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
+        self._relay_power         = GPIO( "Power"   , power_gpio_channel   , GPIO.OUT, 0, active_high=active_high, debug=self._debug)
 
         self._last_btn_press_date = 0
 
@@ -103,7 +103,7 @@ class Remote:
             time.sleep(1)
 
             logger.info('Powering up remote')
-            self._rly_power.set(1)
+            self._relay_power.set(1)
             self._last_btn_press_date = time.time()
             time.sleep(1)
             self._press_button( self.BTN_VALIDATE )
@@ -137,7 +137,7 @@ class Remote:
 
     def stop( self ):
         logger.info('Powering down remote')
-        self._rly_power.set(0)
+        self._relay_power.set(0)
 
     def drive_shutter( self, shutter, command ):
         if shutter not in self._shutters:
