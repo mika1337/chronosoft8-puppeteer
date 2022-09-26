@@ -181,7 +181,7 @@ if __name__ == '__main__':
     try:
         cp = Chronosoft8Puppeteer()
     except:
-        logger.exception('Exception catch while initializing')
+        logger.exception('Exception catched while initializing')
     else:
         try:
             cp.start()
