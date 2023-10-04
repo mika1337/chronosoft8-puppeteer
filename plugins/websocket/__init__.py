@@ -36,12 +36,12 @@ def init_plugin(cs8p_):
         config = json.load(open(config_file))
         port = config['port']
     except:
-        logger.exception('Failed to load config file {}'.format(config_file))
+        logger.exception('Failed to load config file %s',config_file)
 
 def start_plugin():
     global thread
 
-    logger.info('Starting websocket plugin on port {}'.format(port))
+    logger.info('Starting websocket plugin on port %d',port)
     thread = threading.Thread(target=main)
     thread.start()
 
@@ -71,20 +71,20 @@ def main():
 
 async def on_client_connected(websocket,path):
     endpoint = '{}:{}'.format(websocket.remote_address[0], websocket.remote_address[1])
-    logger.info('New connection from {}'.format(endpoint))
+    logger.info('New connection from %s',endpoint)
 
     try:
         async for message in websocket:
             try:
-                logger.debug('Data received from {}: {}'.format(endpoint,message))
+                logger.debug('Data received from %s: %s',endpoint,message)
                 output = process_input(message,endpoint)
                 if output:
                     output = { 'cs8p' : output }
                     json_output = json.dumps( output )
-                    logger.debug('Sending data to {}: {}'.format(endpoint,json_output))
+                    logger.debug('Sending data to %s: %s',endpoint,json_output)
                     await websocket.send(json_output)
             except:
-                logger.exception('Error while processing data from {}'.format(endpoint))
+                logger.exception('Error while processing data from %s',endpoint)
                 raise
     finally:
         logger.info('{} disconnected'.format(endpoint))
@@ -95,24 +95,28 @@ def process_input(json_input,endpoint):
     try:
         data = json.loads(json_input)
     except:
-        logger.error( 'Received data from client "{}" not in json format'.\
-                      format(endpoint) )
+        logger.error( 'Received data from client "%s" not in json format',endpoint)
     else:
         if 'cs8p' not in data:
-            logger.warning( 'Data from client "{}" does not contain cs8p data'.\
-                            format(endpoint) )
+            logger.warning( 'Data from client "%s" does not contain cs8p data',endpoint)
         else:
             data = data['cs8p']
             logger.debug('data: {}'.format(data))
 
             if 'command' in data:
                 command = data['command']
+
+                # -------------------------------------------------------------
+                # Shutters commands
                 if command == 'get_shutters':
                     shutters = cs8p.get_shutters()
                     output = { 'status': 'ok', 'shutters': shutters }
                 elif command == 'get_groups':
                     groups = cs8p.get_groups()
                     output = { 'status': 'ok', 'groups': groups }
+
+                # -------------------------------------------------------------
+                # Programs commands
                 elif command == 'get_programs':
                     programs = cs8p.get_programs()
                     output = { 'status': 'ok', 'programs': programs }
@@ -125,6 +129,24 @@ def process_input(json_input,endpoint):
                         output = { 'status': 'error' }
                     else:
                         output = { 'status': 'ok' }
+
+                # -------------------------------------------------------------
+                # Config commands
+                elif command == 'get_config':
+                    config = cs8p.get_config()
+                    output = { 'status': 'ok', 'config': config }
+                elif command == 'set_config':
+                    try:
+                        config = data['args']['config']
+                        cs8p.set_config(config)
+                    except:
+                        logger.exception('Failed to update config')
+                        output = { 'status': 'error' }
+                    else:
+                        output = { 'status': 'ok' }
+
+                # -------------------------------------------------------------
+                # Drive commands
                 elif command == 'drive_shutter':
                     try:
                         command = data['args']['command']
@@ -144,4 +166,3 @@ def process_input(json_input,endpoint):
                         cs8p.drive_group(group,command)
                         output = { 'status': 'ok' }
     return output
-                    

@@ -14,7 +14,7 @@ from time import sleep
 
 # =============================================================================
 # Local imports
-from chronosoft8puppeteer import Remote
+from chronosoft8puppeteer import Parameters,Remote
 
 # =============================================================================
 # Logger setup
@@ -41,7 +41,7 @@ class Chronosoft8Puppeteer:
         try:
             self._config = json.load(open(main_config_file))
         except:
-            logger.error('Failed to load config file {}'.format(main_config_file))
+            logger.error('Failed to load config file %s',main_config_file)
             raise
 
         # Load shutters config
@@ -51,7 +51,7 @@ class Chronosoft8Puppeteer:
             shutters_config = json.load(open(shutters_config_file))
             self._shutters = shutters_config['shutters']
         except:
-            logger.error('Failed to load config file {}'.format(shutters_config_file))
+            logger.error('Failed to load config file %s',shutters_config_file)
             raise
 
         # Load groups config
@@ -61,7 +61,7 @@ class Chronosoft8Puppeteer:
             groups_config = json.load(open(groups_config_file))
             self._groups = groups_config['groups']
         except:
-            logger.error('Failed to load config file {}'.format(groups_config_file))
+            logger.error('Failed to load config file %s',groups_config_file)
             raise
 
         # Debug
@@ -76,7 +76,7 @@ class Chronosoft8Puppeteer:
         try:
             plugin_names = self._config['plugins']
         except KeyError:
-            logger.error('Missing active plugins in configuration file {}'.format(config_file))
+            logger.error('Missing active plugins in configuration file %s',config_file)
             raise
 
         # Load plugins
@@ -90,13 +90,14 @@ class Chronosoft8Puppeteer:
         # Initialize command queue
         self._cmd_queue = queue.PriorityQueue()
 
-
+    # -------------------------------------------------------------------------
     def get_shutters(self):
         return self._shutters
 
     def get_groups(self):
         return self._groups
 
+    # -------------------------------------------------------------------------
     def drive_shutter(self,shutter,command):
         priority = 2
 
@@ -114,12 +115,27 @@ class Chronosoft8Puppeteer:
                     self.drive_shutter( shutter,command )
                 break
 
+    # -------------------------------------------------------------------------
     def get_programs(self):
         return self._plugins['scheduling'].get_programs()
 
     def set_programs(self,programs):
         return self._plugins['scheduling'].set_programs(programs)
 
+    # -------------------------------------------------------------------------
+    def get_config(self):
+        return { 'remote_cmd_button_press_duration' : Parameters.remote_cmd_button_press_duration }
+
+    def set_config(self,config):
+        for parameter in config:
+            if parameter == 'remote_cmd_button_press_duration':
+                value = float(config[parameter])
+                logger.info('Setting command button press duration to %.2f s', value)
+                Parameters.remote_cmd_button_press_duration = value
+            else:
+                logger.error('Can\'t set unknown parameter %s', parameter)
+
+    # -------------------------------------------------------------------------
     def start(self):
         # Initialize remote
         logger.info('Initializing remote')
@@ -143,7 +159,7 @@ class Chronosoft8Puppeteer:
                 logger.info('Received shutdown command')
                 break
 
-            logger.debug('Processing order for shutter {}: {}'.format(shutter,command))
+            logger.debug('Processing order for shutter %s: %s',shutter,command)
             self._remote.drive_shutter( shutter, command )
 
     def stop(self):

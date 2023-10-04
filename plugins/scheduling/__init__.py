@@ -43,13 +43,13 @@ def load_config():
     try:
         location_config = json.load(open(location_config_file))
     except:
-        logger.exception('Failed to load location config file {}'.format(location_config))
+        logger.exception('Failed to load location config file %s',location_config_file)
     else:
         # Check config file
         if 'location' not in location_config:
-            logger.error('Missing location entry in config file {}'.format(location_config))
+            logger.error('Missing location entry in config file %s',location_config)
         elif 'latitude' not in location_config['location'] or 'longitude' not in location_config['location']:
-            logger.error('Missing latitude and/or longitude entry in config file {}'.format(location_config))
+            logger.error('Missing latitude and/or longitude entry in config file %s',location_config)
         else:
             latitude  = float(location_config['location']['latitude'])
             longitude = float(location_config['location']['longitude'])
@@ -59,10 +59,10 @@ def load_config():
     try:
         programs_config = json.load(open(programs_config_file))
     except:
-        logger.exception('Failed to load config file {}'.format(programs_config_file))
+        logger.exception('Failed to load config file %s',programs_config_file)
     else:
         if 'programs' not in programs_config:
-            logger.error('Missing programs entry in config file {}'.format(programs_config_file))
+            logger.error('Missing programs entry in config file %s',programs_config_file)
 
 def start_plugin():
     logger.info('Starting scheduling plugin')
@@ -95,22 +95,21 @@ def schedule():
         timer.cancel()
     timers.clear()
 
-    if location_info == None or programs_config == None:
+    if location_info is None or programs_config is None:
         logger.error('Error while loading config file, plugin won\'t start')
     else:
-        active_programs = list()
         current_day = weekdays[datetime.date.today().weekday()]
-        logger.debug('Current days is {}'.format(current_day))
+        logger.debug('Current days is %s',current_day)
 
         for program in programs_config['programs']:
             # Check if enable
-            if program['enable'] == False:
-                logger.debug('Program {} not scheduled: disabled'.format(program['name']))
+            if not program['enable'] is False:
+                logger.debug('Program %s not scheduled: disabled',program['name'])
                 continue
 
             # Check if program is for today
             if current_day not in program['days']:
-                logger.debug('Program {} not scheduled: not for today'.format(program['name']))
+                logger.debug('Program %s not scheduled: not for today',program['name'])
                 continue
 
             # Check if program is in the future
@@ -119,11 +118,11 @@ def schedule():
             delta = program_date - now
             delta_seconds = delta.total_seconds()
             if delta_seconds < 0:
-                logger.debug('Program {} not scheduled: in the past (date was {})'.format(program['name'],program_date.astimezone()))
+                logger.debug('Program %s not scheduled: in the past (date was %s)',program['name'],program_date.astimezone())
                 continue
 
             # Schedule program
-            logger.info('Program {} scheduled at {}'.format(program['name'],program_date.astimezone()))
+            logger.info('Program %s scheduled at %s',program['name'],program_date.astimezone())
             timer = threading.Timer(delta_seconds,execute_command, [program['name'],program['shutters'],get_program_command(program['action'])] )
             timer.start()
             timers.append( timer )
@@ -141,7 +140,7 @@ def schedule():
         timers.append( timer )
 
 def execute_command(program_name, shutters, command):
-    logger.info('Running {} for shutters {} with command {}'.format(program_name,shutters,command))
+    logger.info('Running %s for shutters %s with command %s',program_name,shutters,command)
     for shutter in shutters:
         cs8p.drive_shutter( shutter, command )
 
@@ -173,10 +172,10 @@ def get_program_date( param ):
             td = datetime.datetime.today()
             return astral.sun.sun(location_info.observer,date=datetime.datetime.today())[event] + datetime.timedelta(minutes=offset)
         else:
-            logger.error('Unsupported sun event "{}"'.format(event))
+            logger.error('Unsupported sun event "%s"',event)
             return datetime.datetime.datetime(1900,1,1)
 
     else:
-        logger.error('Unsupported trigger source "{}"'.format(param['source']))
+        logger.error('Unsupported trigger source "%s"',param['source'])
         return datetime.datetime.datetime(1900,1,1)
 
