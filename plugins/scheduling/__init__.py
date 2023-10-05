@@ -79,7 +79,7 @@ def stop_plugin():
     timers.clear()
 
 def get_programs():
-    if programs_config == None or 'programs' not in programs_config:
+    if programs_config is None or 'programs' not in programs_config:
         return None
     return programs_config['programs']
 
@@ -103,7 +103,7 @@ def schedule():
 
         for program in programs_config['programs']:
             # Check if enable
-            if not program['enable'] is False:
+            if program['enable'] is False:
                 logger.debug('Program %s not scheduled: disabled',program['name'])
                 continue
 
