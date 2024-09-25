@@ -35,6 +35,9 @@ class Chronosoft8Puppeteer:
     CMD_SHUTDOWN = 'shutdown'
 
     def __init__(self):
+        # Initialize restart request
+        self._restart = False
+
         # Load main config
         main_config_file = os.path.join( config_path
                                        , 'chronosoft8-puppeteer.json')
@@ -104,7 +107,7 @@ class Chronosoft8Puppeteer:
         # Stop commands are executed first
         if command == self.CMD_STOP:
             priority = 1
-        
+
         self._cmd_queue.put( ( priority, datetime.datetime.now()
                              , shutter, command ) )
 
@@ -162,13 +165,22 @@ class Chronosoft8Puppeteer:
             logger.debug('Processing order for shutter %s: %s',shutter,command)
             self._remote.drive_shutter( shutter, command )
 
-    def stop(self):
+    def stop(self, restart = False):
+        self._restart = restart
+        priority = 3
+        self._cmd_queue.put( ( priority, datetime.datetime.now()
+                             , '', self.CMD_SHUTDOWN ) )
+
+    # -------------------------------------------------------------------------
+    def do_stop(self):
         # Stop all plugins
         for (plugin_name,plugin) in self._plugins.items():
             plugin.stop_plugin()
 
         self._remote.stop()
 
+    def shall_restart(self):
+        return self._restart
 
 # =============================================================================
 # Main
@@ -194,15 +206,22 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     logger.info('Chronosoft8 Puppeteer starting')
 
-    try:
-        cp = Chronosoft8Puppeteer()
-    except:
-        logger.exception('Exception catched while initializing')
-    else:
+    restart = True
+
+    while restart is True:
         try:
-            cp.start()
+            cp = Chronosoft8Puppeteer()
         except:
-            logger.exception('Stopping on exception')
-        cp.stop()
+            logger.exception('Exception catched while initializing')
+        else:
+            try:
+                cp.start()
+            except:
+                logger.exception('Stopping on exception')
+            cp.do_stop()
+
+        restart = cp.shall_restart()
+        if restart is True:
+            logger.info('restarting')
 
     logger.info('Chronosoft8 Puppeteer stopping')

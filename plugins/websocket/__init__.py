@@ -165,4 +165,10 @@ def process_input(json_input,endpoint):
                     else:
                         cs8p.drive_group(group,command)
                         output = { 'status': 'ok' }
+
+                # -------------------------------------------------------------
+                # Utilities commands
+                elif command == 'restart':
+                    cs8p.stop( True )
+                    output = { 'status': 'ok' }
     return output
