@@ -100,6 +100,7 @@ class Remote:
             logger.warn('Debug enabled, not powering up remote')
         else:
             logger.debug('Waiting in case remote was powered on startup')
+            self._relay_power.set(0)
             time.sleep(1)
 
             logger.info('Powering up remote')

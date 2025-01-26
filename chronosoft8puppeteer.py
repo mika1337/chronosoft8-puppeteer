@@ -218,7 +218,11 @@ if __name__ == '__main__':
                 cp.start()
             except:
                 logger.exception('Stopping on exception')
-            cp.do_stop()
+            
+            try:
+                cp.do_stop()
+            except:
+                logger.exception('Exception catched while stopping')
 
         restart = cp.shall_restart()
         if restart is True:
